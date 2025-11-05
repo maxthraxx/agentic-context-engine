@@ -77,6 +77,7 @@ class Generator:
         llm: The LLM client to use for generation
         prompt_template: Custom prompt template (uses GENERATOR_PROMPT by default)
         max_retries: Maximum attempts if JSON parsing fails (default: 3)
+        retry_prompt: Additional instruction appended on retry for JSON failures (default: English JSON reminder)
 
     Example:
         >>> from ace import Generator, LiteLLMClient, Playbook
@@ -109,10 +110,12 @@ class Generator:
         prompt_template: str = GENERATOR_PROMPT,
         *,
         max_retries: int = 3,
+        retry_prompt: str = "\n\nIMPORTANT: Return ONLY a single valid JSON object. Escape all quotes properly or use single quotes. Do not include any additional text outside the JSON.",
     ) -> None:
         self.llm = llm
         self.prompt_template = prompt_template
         self.max_retries = max_retries
+        self.retry_prompt = retry_prompt
 
     @maybe_track(
         name="generator_generate",
@@ -187,10 +190,9 @@ class Generator:
                 last_error = err
                 if attempt + 1 >= self.max_retries:
                     break
-                prompt = (
-                    base_prompt + "\n\n务必仅输出单个有效 JSON 对象，"
-                    "请转义所有引号或改用单引号，避免输出额外文本。"
-                )
+                # Append retry instruction to help LLM produce valid JSON
+                # Configurable via retry_prompt parameter (supports different languages/models)
+                prompt = base_prompt + self.retry_prompt
         raise RuntimeError("Generator failed to produce valid JSON.") from last_error
 
 

@@ -186,9 +186,7 @@ class AdapterBase:
             )
         except Exception as e:
             # Log observability errors in debug mode but don't interrupt main flow
-            import logging
-            logging.debug(f"Opik observability error (non-critical): {e}")
-            pass
+            logger.debug(f"Opik observability error (non-critical): {e}")
 
     def get_observability_data(self) -> Dict[str, Any]:
         """Get observability data (if available through Opik integration)."""
@@ -200,23 +198,6 @@ class AdapterBase:
             'opik_available': self.opik_integration.is_available(),
             'playbook_stats': self.playbook.stats()
         }
-
-        if self.evolution_tracker:
-            evolution_file = output_path / "evolution_analysis.json"
-            self.evolution_tracker.export_timeline(evolution_file)
-            exported_files['evolution'] = str(evolution_file)
-
-        if self.attribution_analyzer:
-            attribution_file = output_path / "attribution_analysis.json"
-            self.attribution_analyzer.export_analysis(attribution_file)
-            exported_files['attribution'] = str(attribution_file)
-
-        if self.interaction_tracer:
-            interaction_file = output_path / "interaction_analysis.json"
-            self.interaction_tracer.export_traces(interaction_file)
-            exported_files['interactions'] = str(interaction_file)
-
-        return exported_files
 
     # ------------------------------------------------------------------ #
     def _reflection_context(self) -> str:
